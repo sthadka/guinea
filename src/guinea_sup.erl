@@ -28,12 +28,17 @@ init([]) ->
     {ok, { {one_for_one, 5, 10}, [webserver()]} }.
 
 webserver() ->
+    BasicauthConfig = [
+                          {auth_fun, fun guinea_http:auth_fun/3},
+                          {auth_realm, <<"HTTP Auth">>}
+                         ],
     MiddlewareConfig =
         [{mods, [
-                 % Uncomment to enable elli stats (accesible at
-                    % server/elli/stats )
-                 {elli_stats, [{docroot, filename:join(
-                                    code:priv_dir(elli_stats), "docroot")}]},
+% Uncomment to enable elli stats (accesible at
+% server/elli/stats )
+%                 {elli_stats, [{docroot, filename:join(
+%                                    code:priv_dir(elli_stats), "docroot")}]},
+                 {elli_basicauth, BasicauthConfig},
                  {guinea_http, []}]}],
 
     {webserver,

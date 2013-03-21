@@ -173,35 +173,18 @@ handle('GET', [<<"robots.txt">>], _Req) ->
 handle('GET', [<<"deny">>], _Req) ->
     file:read_file(filename:join(["./priv/docroot", "deny.txt"]));
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-%% Simple response
-%% Test GET
-handle('GET',[<<"simple">>], _Req) ->
-    {200, [], <<"ok">>};
+% Additional functions
 
 %% Gauss
 %% GET with response times over normal distribution
 handle('GET',[<<"gauss">>], _Req) ->
     gauss_delay(),
+    {200, [], <<"ok">>};
+
+%% Gauss with user specified delay
+%% GET with response times over normal distribution
+handle('GET',[<<"gauss">>, Mean, SD], _Req) ->
+    gauss_delay(Mean, SD),
     {200, [], <<"ok">>};
 
 %% Payload
@@ -226,24 +209,6 @@ handle('GET', [<<"chunk">>, Count, Interval], Req) ->
 
     spawn(fun () -> send_ping(ChunkRef, ?b2i(Count), ?b2i(Interval)) end),
     {chunk, Headers, <<>>};
-
-%% API GET (tracking)
-%% Simple get with gaussian delay
-handle('GET',[<<"api_get">>], _Req) ->
-    gauss_delay(),
-    {200, [], <<"ok">>};
-
-%% Similate an online API provider
-%% For pushing large data from client to server
-handle('POST', [<<"api_push">>], Req) ->
-    gauss_delay(),
-    {200, [], ?i2b(byte_size(elli_request:body(Req)))};
-
-%% Similate an online API provider (database)
-%% For pull large data from server to client
-handle('POST', [<<"api_pull">>, Size], _Req) ->
-    gauss_delay(),
-    {200, [], get_binary(?i2b(Size))};
 
 handle(_, _, _Req) ->
     {404, [], <<"Not Found">>}.
@@ -299,7 +264,10 @@ get_binary(Size) ->
     end.
 
 gauss_delay() ->
-    timer:sleep(guinea_lib:gauss_int(?MEAN, ?SD)).
+    gauss_delay(?MEAN, ?SD).
+
+gauss_delay(Mean, SD) ->
+    timer:sleep(guinea_lib:gauss_int(Mean, SD)).
 
 bproplist2b(List) ->
     bproplist2b(List, <<>>).

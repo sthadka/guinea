@@ -42,15 +42,13 @@ handle('GET',[<<"headers">>], Req) ->
 handle('GET',[<<"get">>], _Req) ->
     {200, [], <<"ok">>};
 
-%% POST
-handle('POST',[<<"post">>], Req) ->
-    {200, [], elli_request:body(Req)};
-
-%% PUT
-handle('PUT',[<<"put">> | _Path], Req) ->
-    Path = elli_request:raw_path(Req),
-    Body = elli_request:body(Req),
-    {200, [], <<Path/binary, "\n", Body/binary>>};
+handle('GET', [<<"get-all">> |  _], Req) ->
+    Response = [{<<"method">>, ?TO_B(elli_request:method(Req))},
+                {<<"path">>, elli_request:path(Req)},
+                {<<"args">>, elli_request:get_args(Req)},
+                {<<"raw_path">>, elli_request:raw_path(Req)},
+                {<<"headers">>, elli_request:headers(Req)}],
+    {200, [], bproplist2b(Response)};
 
 %% DELETE
 handle('DELETE',[<<"delete">>], Req) ->
@@ -70,7 +68,6 @@ handle('GET',[<<"status">>, Code], _Req) ->
 
 %% Response headers
 handle('GET',[<<"response-headers">>], Req) ->
-    io:format("~p~n", [elli_request:get_args(Req)]),
     {200,
      elli_request:get_args(Req),
      bproplist2b(elli_request:get_args(Req))};
@@ -274,9 +271,19 @@ bproplist2b(List) ->
 
 bproplist2b([], Acc) ->
     Acc;
+bproplist2b([{K, V} | List], Acc) when is_list(V) ->
+    bproplist2b(List, <<Acc/binary, "{", K/binary, ", ",
+                        (bproplist2b(V))/binary, "}", "\n">>);
 bproplist2b([{K, V} | List], Acc) ->
     bproplist2b(List,
-                <<Acc/binary, "{", K/binary, ", ", V/binary, "}", "\n">>).
+                <<Acc/binary, "{", K/binary, ", ", V/binary, "}", "\n">>);
+bproplist2b(List, Acc) when is_list(List) ->
+    BList = lists:foldl(fun (E, <<>>) ->
+                                <<(?TO_B(E))/binary>>;
+                            (E, B) ->
+                                <<B/binary, ",", (?TO_B(E))/binary>>
+                        end, <<>>, List),
+    <<Acc/binary, "[", BList/binary, "]">>.
 
 password_check({U, P}, {U, P}) -> ok;
 password_check(_, {undefined, undefined}) -> unauthorized;

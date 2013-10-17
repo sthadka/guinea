@@ -6,7 +6,7 @@ guinea - erlang webserver for load testing
 Description
 ---
 
-HTTP clients differ with feature and capabilities. guinea tries to provide
+HTTP clients differ in feature and capabilities. guinea tries to provide
 simple endpoint that can handle thousands of concurrent connections.
 
 guinea uses [elli](https://github.com/knutin/elli) for serving requests.

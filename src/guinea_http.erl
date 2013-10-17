@@ -64,7 +64,7 @@ handle('GET',[<<"gzip">>], Req) ->
 
 %% Status code
 handle('GET',[<<"status">>, Code], _Req) ->
-    {?b2i(Code), [], <<>>};
+    {?TO_I(Code), [], <<>>};
 
 %% Response headers
 handle('GET',[<<"response-headers">>], Req) ->
@@ -78,7 +78,7 @@ handle('GET',[<<"redirect">>, <<"1">>], Req) ->
     {302, [{<<"Location">>, <<"http://", Host/binary, "/get">>}], <<>>};
 handle('GET',[<<"redirect">>, N], Req) when N > 0 ->
     Host = elli_request:get_header(<<"Host">>, Req),
-    NewN = ?i2b(?b2i(N) - 1),
+    NewN = ?TO_B(?TO_I(N) - 1),
     {302,
      [{<<"Location">>, <<"http://", Host/binary, "/redirect/", NewN/binary>>}],
      <<>>};
@@ -89,7 +89,7 @@ handle('GET',[<<"relative-redirect">>, <<"1">>], _Req) ->
      [{<<"Location">>, <<"/get">>}],
      <<>>};
 handle('GET',[<<"relative-redirect">>, N], _Req) when N > 0 ->
-    NewN = ?i2b(?b2i(N) - 1),
+    NewN = ?TO_B(?TO_I(N) - 1),
     {302, [{<<"Location">>, <<"/relative-redirect/", NewN/binary>>}], <<>>};
 
 %% Get cookie data
@@ -131,7 +131,7 @@ handle('GET', [<<"hidden-basic-auth">>, User, _Password], _Req) ->
 
 %% Stream chunked data
 handle('GET', [<<"stream">>, Count], Req) ->
-    N = min(?b2i(Count), 100),
+    N = min(?TO_I(Count), 100),
     ChunkRef = case elli_request:chunk_ref(Req) of
                    {error, not_supported} ->
                        throw({505, [{<<"Access-Control-Allow-Origin">>, <<"*">>}],
@@ -146,7 +146,7 @@ handle('GET', [<<"stream">>, Count], Req) ->
     % Start streaming after 500ms
     spawn(fun() ->
                   timer:sleep(500),
-                  [elli_request:send_chunk(ChunkRef, <<(?i2b(I))/binary,"\n">>)
+                  [elli_request:send_chunk(ChunkRef, <<(?TO_B(I))/binary,"\n">>)
                    || I <- lists:seq(1, N)],
                   elli_request:close_chunk(ChunkRef)
           end),
@@ -155,7 +155,7 @@ handle('GET', [<<"stream">>, Count], Req) ->
 
 %% Delay
 handle('GET', [<<"delay">>, Duration], _Req) ->
-    timer:sleep(?b2i(Duration) * 1000),
+    timer:sleep(?TO_I(Duration) * 1000),
     {200, [], <<"ok">>};
 
 %% HTML page
@@ -204,7 +204,7 @@ handle('GET', [<<"chunk">>, Count, Interval], Req) ->
                {<<"Connection">>, <<"Keep-Alive">>},
                {<<"Access-Control-Allow-Origin">>, <<"*">>}],
 
-    spawn(fun () -> send_ping(ChunkRef, ?b2i(Count), ?b2i(Interval)) end),
+    spawn(fun () -> send_ping(ChunkRef, ?TO_I(Count), ?TO_I(Interval)) end),
     {chunk, Headers, <<>>};
 
 handle(_, _, _Req) ->

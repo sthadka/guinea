@@ -39,8 +39,9 @@ handle('GET',[<<"headers">>], Req) ->
      bproplist2b(Req#req.headers)};
 
 %% GET
-handle('GET',[<<"get">>], _Req) ->
-    {200, [], <<"ok">>};
+handle('GET',[<<"get">>], Req) ->
+    Params = jiffy:encode({elli_request:get_args(Req)}),
+    {200, [], Params};
 
 handle('GET', [<<"get-all">> |  _], Req) ->
     Response = [{<<"method">>, ?TO_B(elli_request:method(Req))},
@@ -206,6 +207,10 @@ handle('GET', [<<"chunk">>, Count, Interval], Req) ->
 
     spawn(fun () -> send_ping(ChunkRef, ?b2i(Count), ?b2i(Interval)) end),
     {chunk, Headers, <<>>};
+
+%% First value in the url as a parameter
+handle('GET', Param, _Req) ->
+    {200, [], Param};
 
 handle(_, _, _Req) ->
     {404, [], <<"Not Found">>}.

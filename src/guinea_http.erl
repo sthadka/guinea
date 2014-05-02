@@ -2,7 +2,7 @@
 
 -module(guinea_http).
 -export([handle/2, handle_event/3,
-        auth_fun/3]).
+         auth_fun/3]).
 
 -export([fixed_char/1, gauss_delay/0]).
 

@@ -3,10 +3,8 @@
   {description, ""},
   {vsn, "1"},
   {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib
-                 ]},
+  {applications, [kernel,
+                  stdlib]},
   {mod, { guinea_app, []}},
   {env, []}
  ]}.

@@ -1,40 +1,51 @@
-APP_DEPS=kernel stdlib eunit tools compiler
-ERLFLAGS= -pa $(CURDIR)/.eunit -pa $(CURDIR)/ebin -pa $(CURDIR)/deps/*/ebin
+REBAR = @$(shell pwd)/rebar
+APP_NAME = guinea
 
-REBAR="./rebar"
-ifeq ($(REBAR),)
-$(error "Rebar not available on this system")
-endif
+all: xref
 
-ERL = $(shell which erl)
-ifeq ($(ERL),)
-$(error "Erlang must be available on this system")
-endif
+dependencies:
+	@${REBAR} get-deps
 
-.PHONY: all rebuild compile clean test get-deps clean-deps \
-	shell distclean
+applications: dependencies
+	@${REBAR} compile
 
-all: get-deps compile
+test:
+	@${REBAR} eunit skip_deps=true
 
-rebuild: distclean get-deps all
+xref: applications
+	@${REBAR} skip_deps=true xref
 
-get-deps:
-	@$(REBAR) -C rebar.config get-deps
-	@$(REBAR) -C rebar.config compile
+dialyzer:
+	@dialyzer --plt .@${APP_NAME}.plt -r apps \
+		-Wrace_conditions -Wunderspecs -Wspecdiffs
 
-compile:
-	@$(REBAR) -C rebar.config skip_deps=true compile
+plt: applications
+	@dialyzer --output_plt .@${APP_NAME}.plt --build_plt --apps \
+		erts kernel stdlib crypto sasl ssl inets xmerl public_key compiler \
+		tools runtime_tools deps/*/ebin
+
+# Cleaning tasks:
+
+depclean:
+	@rm -rf deps/*
 
 clean:
-	@$(REBAR) -C rebar.config skip_deps=true clean
+	$(REBAR) clean skip_deps=true
 
-#test: get-deps
-#	@$(REBAR) -C rebar.config skip_deps=true eunit
+allclean: depclean
+	@${REBAR} clean
 
-shell:
-	@$(ERL) $(ERLFLAGS)
+# Other tasks:
 
-clean-deps:
-	@rm -rvf $(CURDIR)/deps/*
+start: applications
+	erl -pa deps/*/ebin ebin -boot start_sasl \
+		-eval "app_util:dev_start(@${APP_NAME}, permanent)."
 
-distclean: clean clean-deps
+fastcompile:
+	@$(REBAR) skip_deps=true compile
+
+faststart: fastcompile
+	erl -pa deps/*/ebin ebin -boot start_sasl \
+		-eval "app_util:dev_start(@${APP_NAME}, permanent)."
+
+.PHONY: all test dialyzer clean allclean dependencies start
